@@ -176,6 +176,8 @@ export default class VoiceOrder extends Vue {
     try {
       let split = text.split(new RegExp('(,| )')).filter(data => data.trim() && data.trim() != ',');
       console.log(split);
+      let processedAny = false;
+
       for (let i = 0; i < split.length; i++) {
         let word = split[i];
         let nextWord = split[i + 1];
@@ -183,44 +185,56 @@ export default class VoiceOrder extends Vue {
         let wordMatch = word?.match(
           new RegExp(
             `(${this.stockList
-              .map(item => [item.name, item.alias])
+              .map(item => [item.name, ...(item.alias || [])])
               .flat()
+              .filter(name => name)
               .join('|')})`
           )
-        )?.input;
+        );
 
         let stockItem: StockItem | undefined;
 
         if (wordMatch) {
+          let matchedName = wordMatch[0];
           // 인덱스 가져오기
           stockItem = this.stockList.find(
-            item => item.alias!.indexOf(wordMatch!) != -1 || item.name == wordMatch
+            item =>
+              (item.alias && item.alias.indexOf(matchedName) != -1) || item.name == matchedName
           );
-          if (!stockItem) throw '메뉴가 존재하지 않습니다.';
-        } else throw '메뉴가 존재하지 않습니다.';
+          if (!stockItem) continue;
+        } else continue;
 
         let nextWordMatch = nextWord?.match(
           new RegExp(
             `([1-9]+[0-9]*)|(열|스물|서른|마흔|쉰|예순|일흔|여든|아흔)(하나|둘|셋|다섯|여섯|일곱|여덟|아홉)?|(스무)|(한|하나|두|둘|세|셋|네|넷|다섯|여섯|일곱|여덟|아홉)`
           )
-        )?.input;
+        );
 
         let quantity = 1;
 
         if (nextWordMatch) {
           i++;
           // 갯수 가져오기
-          let matchCount = String(nextWordMatch.replace('개', ''));
+          let matchCount = String(nextWordMatch[0]);
           if (!isNaN(Number(matchCount))) quantity = Number(matchCount);
           else if (matchCount in koreanNumber) quantity = koreanNumber[matchCount];
         }
 
         let prevStockItem = this.shoppingCart.find(s => s.name == stockItem?.name);
         if (prevStockItem) {
-          if (stockItem!.quantity > prevStockItem.quantity) prevStockItem.quantity++;
-          else unavailableItems.push(stockItem);
-        } else this.shoppingCart.push({ ...stockItem!, quantity: quantity });
+          if (stockItem!.quantity >= prevStockItem.quantity + quantity) {
+            prevStockItem.quantity += quantity;
+            processedAny = true;
+          } else unavailableItems.push(stockItem!);
+        } else {
+          if (stockItem!.quantity >= quantity) {
+            this.shoppingCart.push({ ...stockItem!, quantity: quantity });
+            processedAny = true;
+          } else unavailableItems.push(stockItem!);
+        }
       }
+
+      if (!processedAny && !unavailableItems.length) throw '인식된 메뉴가 없습니다.';
 
       let clearStr = '장바구니에 담긴 제품';
       if (!this.shoppingCart.length) {
