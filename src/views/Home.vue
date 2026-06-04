@@ -1,9 +1,18 @@
 <template>
   <div class="home">
     <div class="actions">
-      <app-button @click="$router.replace('/voiceorder')">말로 주문하기</app-button>
-      <app-button @click="requestAssistant">도움 요청</app-button>
-      <app-button @click="$router.replace('order')">시작하기</app-button>
+      <app-button @click="$router.replace('/voiceorder')">
+        <i class="iconify" data-icon="mdi:microphone"></i>
+        <span>말로 주문하기</span>
+      </app-button>
+      <app-button @click="requestAssistant">
+        <i class="iconify" data-icon="mdi:bell"></i>
+        <span>도움 요청</span>
+      </app-button>
+      <app-button @click="$router.replace('order')">
+        <i class="iconify" data-icon="mdi:touch-app"></i>
+        <span>터치로 주문하기</span>
+      </app-button>
     </div>
   </div>
 </template>
@@ -65,11 +74,22 @@ export default class Home extends Vue {
     flex-direction: column;
 
     width: 100%;
-    max-width: 500px;
+    max-width: 600px;
     .app-button {
-      font-size: 1.5em;
-      height: 70px;
-      margin: 15px;
+      font-size: 2.2em;
+      font-weight: bold;
+      height: 100px;
+      margin: 20px;
+      border-radius: 16px;
+
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+
+      .iconify {
+        font-size: 1.4em;
+        margin-right: 15px;
+      }
     }
   }
 }
