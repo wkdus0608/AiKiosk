@@ -23,6 +23,9 @@ export interface RootState {
   helloLoop: number;
   script: string;
   userText: string;
+  fontSize: number;
+  highContrast: boolean;
+  showVoiceAssist: boolean;
 }
 
 const store: StoreOptions<RootState> = {
@@ -34,6 +37,9 @@ const store: StoreOptions<RootState> = {
     helloLoop: 0,
     script: '',
     userText: '',
+    fontSize: 1.0,
+    highContrast: false,
+    showVoiceAssist: false,
   },
   mutations: {
     activateEarphoneDetection(state) {
@@ -41,6 +47,15 @@ const store: StoreOptions<RootState> = {
     },
     stopHelloLoop(state) {
       clearInterval(state.helloLoop);
+    },
+    setFontSize(state, size: number) {
+      state.fontSize = size;
+    },
+    toggleHighContrast(state) {
+      state.highContrast = !state.highContrast;
+    },
+    toggleVoiceAssist(state) {
+      state.showVoiceAssist = !state.showVoiceAssist;
     },
     ...vuexfireMutations,
   },
