@@ -20,6 +20,7 @@ export interface RootState {
   fcmToken: string;
   earphoneDetection: boolean;
   stockList: StockItem[];
+  mockStockList: StockItem[];
   helloLoop: number;
   script: string;
   userText: string;
@@ -34,6 +35,64 @@ const store: StoreOptions<RootState> = {
     fcmToken: '',
     earphoneDetection: false,
     stockList: [],
+    mockStockList: [
+      {
+        name: '아메리카노',
+        price: 4500,
+        quantity: 100,
+        alias: ['아아', '따아', '커피'],
+        image: 'https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=500&q=80'
+      },
+      {
+        name: '카페라떼',
+        price: 5000,
+        quantity: 100,
+        alias: ['라떼'],
+        image: 'https://images.unsplash.com/photo-1541167760496-162955ed8a9f?w=500&q=80'
+      },
+      {
+        name: '카푸치노',
+        price: 5000,
+        quantity: 100,
+        alias: ['거품커피'],
+        image: 'https://images.unsplash.com/photo-1534778101976-62847782c213?w=500&q=80'
+      },
+      {
+        name: '바닐라라떼',
+        price: 5500,
+        quantity: 100,
+        alias: ['바닐라', '단커피'],
+        image: 'https://images.unsplash.com/photo-1595434066389-99c30150fc9a?w=500&q=80'
+      },
+      {
+        name: '조각 케이크',
+        price: 6000,
+        quantity: 20,
+        alias: ['케익', '조각케익'],
+        image: 'https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=500&q=80'
+      },
+      {
+        name: '초코 쿠키',
+        price: 2000,
+        quantity: 50,
+        alias: ['쿠키'],
+        image: 'https://images.unsplash.com/photo-1499636136210-6f4ee915583e?w=500&q=80'
+      },
+      {
+        name: '마카롱',
+        price: 2500,
+        quantity: 40,
+        alias: ['마까롱'],
+        image: 'https://images.unsplash.com/photo-1558301211-0d8c8ddee6ec?w=500&q=80'
+      },
+      {
+        name: '크로플',
+        price: 5500,
+        quantity: 30,
+        alias: ['와플'],
+        image: 'https://images.unsplash.com/photo-1551326344-42d39d7a04f5?w=500&q=80'
+      }
+    ],
     helloLoop: 0,
     script: '',
     userText: '',
@@ -59,6 +118,11 @@ const store: StoreOptions<RootState> = {
     },
     ...vuexfireMutations,
   },
+  getters: {
+    allStockList(state): StockItem[] {
+      return [...state.stockList, ...state.mockStockList];
+    }
+  },
   actions: {
     bindStock: firestoreAction(({ bindFirestoreRef }) => {
       return bindFirestoreRef('stockList', db.collection('stock').orderBy('name'));
@@ -72,9 +136,9 @@ const store: StoreOptions<RootState> = {
         16000
       );
     },
-    async playItems({ state, dispatch }): Promise<boolean> {
+    async playItems({ state, getters, dispatch }): Promise<boolean> {
       let stockList: string = '';
-      state.stockList.forEach(item => {
+      getters.allStockList.forEach((item: StockItem) => {
         stockList += `${item.name}, `;
       });
       state.script = script.item_list;

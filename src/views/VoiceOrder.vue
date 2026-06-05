@@ -70,7 +70,7 @@ import STT from '@/components/util/STT.vue';
 import { StockItem } from '@/schema';
 import numberFormat from '@/utils/numberFormat';
 import { Component, Vue } from 'vue-property-decorator';
-import { Action, State } from 'vuex-class';
+import { Action, State, Getter } from 'vuex-class';
 
 const script = require('@/lib/script.json');
 const koreanNumber = require('@/lib/koreanNumber.json');
@@ -81,7 +81,7 @@ const koreanNumber = require('@/lib/koreanNumber.json');
   },
 })
 export default class VoiceOrder extends Vue {
-  @State('stockList') stockList!: StockItem[];
+  @Getter('allStockList') stockList!: StockItem[];
   @State('script') script!: string;
   @State('userText') userText!: string;
 

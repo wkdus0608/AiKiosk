@@ -137,12 +137,12 @@
 import { StockItem } from '@/schema';
 import numberFormat from '@/utils/numberFormat';
 import { Component, Vue } from 'vue-property-decorator';
-import { Action, State } from 'vuex-class';
+import { Action, State, Getter } from 'vuex-class';
 
 @Component({})
 export default class Order extends Vue {
   @State('isElectron') isElectron!: boolean;
-  @State('stockList') stockList!: StockItem[];
+  @Getter('allStockList') stockList!: StockItem[];
   @State('showVoiceAssist') showVoiceAssist!: boolean;
 
   @Action('TTS') TTS!: Function;
