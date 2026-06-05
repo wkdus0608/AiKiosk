@@ -2,11 +2,14 @@
   <div :class="{ order: !isElectron, 'order-electron': isElectron }">
     <div class="menu-section">
       <div class="category-tabs">
-        <div v-for="cat in categories" :key="cat" class="category-tab-wrapper">
+        <div v-for="(cat, catIdx) in categories" :key="cat" class="category-tab-wrapper">
           <button
             class="category-tab"
-            :class="{ active: selectedCategory === cat }"
-            @click="selectedCategory = cat"
+            :class="{ 
+              active: selectedCategory === cat, 
+              focused: currentZone === 'category' && currentIndex === catIdx 
+            }"
+            @click="selectedCategory = cat, currentZone = 'category', currentIndex = catIdx"
           >
             {{ cat }}
           </button>
@@ -16,9 +19,14 @@
         </div>
       </div>
 
-      <div class="product-container">
-        <div v-for="(item, idx) in filteredStockList" :key="idx" class="product-wrapper">
-          <div class="product" @click="addItem(item)">
+      <div class="product-container" ref="productContainer">
+        <div 
+          v-for="(item, idx) in filteredStockList" 
+          :key="idx" 
+          class="product-wrapper"
+          :class="{ focused: currentZone === 'product' && currentIndex === idx }"
+        >
+          <div class="product" @click="addItem(item), currentZone = 'product', currentIndex = idx">
             <md-card md-with-hover>
               <md-ripple>
                 <md-card-header v-if="!isElectron">
@@ -53,7 +61,8 @@
           v-if="!shoppingCartVisible && shoppingCart.length && !isElectron"
           class="shoppingCart-toggle"
           round
-          @click="shoppingCartVisible = true"
+          :class="{ focused: currentZone === 'cart-toggle' }"
+          @click="shoppingCartVisible = true, currentZone = 'cart', currentIndex = 0"
         >
           <i class="iconify" data-icon="mdi:chevron-up"></i>
           장바구니 열기
@@ -67,7 +76,12 @@
         >
           <div class="shoppingCart-heading">
             <h1>장바구니</h1>
-            <app-button v-if="!isElectron" round @click="shoppingCartVisible = false">
+            <app-button 
+              v-if="!isElectron" 
+              round 
+              :class="{ focused: currentZone === 'cart-hide' }"
+              @click="shoppingCartVisible = false, currentZone = 'product', currentIndex = 0"
+            >
               <i class="iconify" data-icon="mdi:chevron-down"></i>
               숨기기
             </app-button>
@@ -76,6 +90,7 @@
               round
               color="accent"
               :disabled="!shoppingCart.length"
+              :class="{ focused: currentZone === 'cart-clear' }"
               @click="shoppingCart.splice(0, shoppingCart.length)"
             >
               <i class="iconify" data-icon="mdi:trash"></i>
@@ -88,9 +103,17 @@
             <h2>{{ item.name }}</h2>
 
             <md-card-actions class="shoppingCart-actions">
-              <app-button circle dense @click="decreaseItem(item)">-</app-button>
+              <app-button 
+                circle dense 
+                :class="{ focused: currentZone === 'cart' && currentIndex === idx * 2 }"
+                @click="decreaseItem(item), currentZone = 'cart', currentIndex = idx * 2"
+              >-</app-button>
               <h3>&times;{{ item.quantity }}</h3>
-              <app-button circle dense @click="increaseItem(item)">+</app-button>
+              <app-button 
+                circle dense 
+                :class="{ focused: currentZone === 'cart' && currentIndex === idx * 2 + 1 }"
+                @click="increaseItem(item), currentZone = 'cart', currentIndex = idx * 2 + 1"
+              >+</app-button>
             </md-card-actions>
             <h3 class="price">{{ numberFormat(item.price * item.quantity) }}원</h3>
           </div>
@@ -99,7 +122,8 @@
             class="checkout"
             round
             :disabled="!shoppingCart.length"
-            @click="(shoppingCartVisible = false), (isCheckoutVisible = true)"
+            :class="{ focused: currentZone === 'checkout' }"
+            @click="(shoppingCartVisible = false), (isCheckoutVisible = true), currentZone = 'checkout'"
           >
             {{ getTotalPrice }}원 결제하기
           </app-button>
@@ -136,7 +160,7 @@
 <script lang="ts">
 import { StockItem } from '@/schema';
 import numberFormat from '@/utils/numberFormat';
-import { Component, Vue } from 'vue-property-decorator';
+import { Component, Vue, Watch } from 'vue-property-decorator';
 import { Action, State, Getter } from 'vuex-class';
 
 @Component({})
@@ -149,11 +173,180 @@ export default class Order extends Vue {
 
   categories: string[] = ['전체', '커피', '음료', '디저트'];
   selectedCategory: string = '전체';
+  currentZone: string = 'category';
+  currentIndex: number = 0;
 
   shoppingCartVisible: boolean = false;
   shoppingCart: StockItem[] = [];
 
   isCheckoutVisible: boolean = false;
+
+  @Watch('selectedCategory')
+  onCategoryChanged() {
+    if (this.currentZone === 'product') this.currentIndex = 0;
+  }
+
+  mounted() {
+    window.addEventListener('keydown', this.handleKeyDown);
+  }
+
+  beforeDestroy() {
+    window.removeEventListener('keydown', this.handleKeyDown);
+  }
+
+  handleKeyDown(event: KeyboardEvent) {
+    if (this.isCheckoutVisible) {
+      if (event.key === 'Escape' || event.key === 'Backspace' || event.key === 'Enter') {
+        this.isCheckoutVisible = false;
+        this.shoppingCartVisible = true;
+        this.currentZone = 'checkout';
+      }
+      return;
+    }
+
+    const products = this.filteredStockList;
+    const cart = this.shoppingCart;
+    const cols = this.isElectron ? 3 : 1;
+
+    switch (event.key) {
+      case 'ArrowRight':
+        if (this.currentZone === 'category') {
+          this.currentIndex = (this.currentIndex + 1) % this.categories.length;
+          this.selectedCategory = this.categories[this.currentIndex];
+        } else if (this.currentZone === 'product') {
+          if ((this.currentIndex + 1) % cols === 0 || this.currentIndex === products.length - 1) {
+            if (this.isElectron && cart.length > 0) {
+              this.currentZone = 'cart-clear';
+              this.currentIndex = 0;
+            }
+          } else {
+            this.currentIndex = Math.min(this.currentIndex + 1, products.length - 1);
+          }
+        } else if (this.currentZone === 'cart') {
+          if (this.currentIndex % 2 === 0) this.currentIndex++;
+        }
+        break;
+      case 'ArrowLeft':
+        if (this.currentZone === 'category') {
+          this.currentIndex = (this.currentIndex - 1 + this.categories.length) % this.categories.length;
+          this.selectedCategory = this.categories[this.currentIndex];
+        } else if (this.currentZone === 'product') {
+          if (this.currentIndex % cols !== 0) {
+            this.currentIndex = Math.max(this.currentIndex - 1, 0);
+          }
+        } else if (this.currentZone === 'cart' || this.currentZone === 'cart-clear' || this.currentZone === 'checkout') {
+          if (this.currentZone === 'cart' && this.currentIndex % 2 === 1) {
+            this.currentIndex--;
+          } else if (this.isElectron) {
+            this.currentZone = 'product';
+            this.currentIndex = 0; // Or keep row
+          }
+        }
+        break;
+      case 'ArrowDown':
+        if (this.currentZone === 'category') {
+          this.currentZone = 'product';
+          this.currentIndex = 0;
+        } else if (this.currentZone === 'product') {
+          if (this.currentIndex + cols < products.length) {
+            this.currentIndex += cols;
+          } else if (!this.isElectron && cart.length > 0) {
+            this.currentZone = 'cart-toggle';
+          }
+        } else if (this.currentZone === 'cart-toggle') {
+          this.currentZone = 'cart';
+          this.currentIndex = 0;
+        } else if (this.currentZone === 'cart-clear') {
+          this.currentZone = 'cart';
+          this.currentIndex = 0;
+        } else if (this.currentZone === 'cart') {
+          if (this.currentIndex + 2 < cart.length * 2) {
+            this.currentIndex += 2;
+          } else {
+            this.currentZone = 'checkout';
+          }
+        }
+        break;
+      case 'ArrowUp':
+        if (this.currentZone === 'product') {
+          if (this.currentIndex - cols >= 0) {
+            this.currentIndex -= cols;
+          } else {
+            this.currentZone = 'category';
+            this.currentIndex = this.categories.indexOf(this.selectedCategory);
+          }
+        } else if (this.currentZone === 'cart') {
+          if (this.currentIndex - 2 >= 0) {
+            this.currentIndex -= 2;
+          } else if (this.isElectron) {
+            this.currentZone = 'cart-clear';
+          } else {
+            this.currentZone = 'cart-toggle';
+          }
+        } else if (this.currentZone === 'checkout') {
+          if (cart.length > 0) {
+            this.currentZone = 'cart';
+            this.currentIndex = cart.length * 2 - 1;
+          } else {
+            this.currentZone = 'product';
+            this.currentIndex = products.length - 1;
+          }
+        } else if (this.currentZone === 'cart-toggle' || this.currentZone === 'cart-clear') {
+          this.currentZone = 'product';
+          this.currentIndex = products.length - 1;
+        }
+        break;
+      case 'Enter':
+        this.handleEnter();
+        break;
+      case 'Tab':
+        event.preventDefault();
+        const catIdx = this.categories.indexOf(this.selectedCategory);
+        this.selectedCategory = this.categories[(catIdx + 1) % this.categories.length];
+        this.currentZone = 'category';
+        this.currentIndex = (catIdx + 1) % this.categories.length;
+        break;
+    }
+    this.scrollToFocused();
+  }
+
+  handleEnter() {
+    const products = this.filteredStockList;
+    const cart = this.shoppingCart;
+
+    if (this.currentZone === 'category') {
+      this.selectedCategory = this.categories[this.currentIndex];
+    } else if (this.currentZone === 'product') {
+      this.addItem(products[this.currentIndex]);
+    } else if (this.currentZone === 'cart') {
+      const itemIdx = Math.floor(this.currentIndex / 2);
+      const isPlus = this.currentIndex % 2 === 1;
+      if (isPlus) this.increaseItem(cart[itemIdx]);
+      else this.decreaseItem(cart[itemIdx]);
+    } else if (this.currentZone === 'checkout') {
+      if (cart.length > 0) {
+        this.shoppingCartVisible = false;
+        this.isCheckoutVisible = true;
+      }
+    } else if (this.currentZone === 'cart-toggle') {
+      this.shoppingCartVisible = true;
+      this.currentZone = 'cart';
+      this.currentIndex = 0;
+    } else if (this.currentZone === 'cart-clear') {
+      this.shoppingCart.splice(0, this.shoppingCart.length);
+      this.currentZone = 'product';
+      this.currentIndex = 0;
+    }
+  }
+
+  scrollToFocused() {
+    this.$nextTick(() => {
+      const focusedElement = this.$el.querySelector('.focused') as HTMLElement;
+      if (focusedElement) {
+        focusedElement.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+    });
+  }
 
   getCategory(item: StockItem): string {
     const name = item.name.toLowerCase();
@@ -209,10 +402,14 @@ export default class Order extends Vue {
   }
 
   get filteredStockList(): StockItem[] {
+    let list;
     if (this.selectedCategory === '전체') {
-      return this.stockList;
+      list = this.stockList;
+    } else {
+      list = this.stockList.filter(item => this.getCategory(item) === this.selectedCategory);
     }
-    return this.stockList.filter(item => this.getCategory(item) === this.selectedCategory);
+    // 카테고리 변경 시 포커스 초기화 방지 또는 리셋 로직
+    return list;
   }
 
   numberFormat(number: number) {
@@ -321,6 +518,19 @@ export default class Order extends Vue {
           color: #ffffff;
           border-color: #1c1b29;
         }
+
+        &.focused {
+          background-color: #f0f0f0;
+          color: #333333;
+          outline: 4px solid #ff9800;
+          outline-offset: -4px;
+          z-index: 10;
+        }
+
+        &.active.focused {
+          background-color: #2c2b39;
+          color: #ffffff;
+        }
       }
     }
   }
@@ -364,6 +574,16 @@ export default class Order extends Vue {
       align-items: center;
       width: 100%;
       padding: 0 15px;
+      transition: all 0.2s ease;
+      border-radius: 10px;
+
+      &.focused {
+        background-color: rgba(255, 152, 0, 0.1);
+        transform: scale(1.02);
+        outline: 4px solid #ff9800;
+        outline-offset: -4px;
+        z-index: 10;
+      }
 
       .product {
         flex: 1;
@@ -675,6 +895,12 @@ export default class Order extends Vue {
       margin-top: 20px;
     }
   }
+}
+
+.app-button.focused {
+  outline: 4px solid #ff9800 !important;
+  outline-offset: -4px;
+  box-shadow: 0 0 10px rgba(255, 152, 0, 0.5) !important;
 }
 
 @media screen and (max-width: 600px) {
