@@ -1,27 +1,49 @@
 <template>
   <div :class="{ order: !isElectron, 'order-electron': isElectron }">
-    <div class="product-container">
-      <div v-for="(item, idx) in stockList" :key="idx" class="product" @click="addItem(item)">
-        <md-card md-with-hover>
-          <md-ripple>
-            <md-card-header v-if="!isElectron">
-              <img :src="item.image" />
-              <md-card-header-text>
-                <div class="md-title">{{ item.name }}</div>
-                <div class="md-subhead">{{ numberFormat(item.price) }}원</div>
-              </md-card-header-text>
-            </md-card-header>
-            <div v-else>
-              <md-card-media md-ratio="16:9">
-                <img :src="item.image" />
-              </md-card-media>
-              <md-card-header>
-                <div class="md-title">{{ item.name }}</div>
-                <div class="md-subhead">{{ numberFormat(item.price) }}원</div>
-              </md-card-header>
-            </div>
-          </md-ripple>
-        </md-card>
+    <div class="menu-section">
+      <div class="category-tabs">
+        <div v-for="cat in categories" :key="cat" class="category-tab-wrapper">
+          <button
+            class="category-tab"
+            :class="{ active: selectedCategory === cat }"
+            @click="selectedCategory = cat"
+          >
+            {{ cat }}
+          </button>
+          <button v-if="showVoiceAssist" class="voice-btn-small" @click.stop="TTS(cat)">
+            <i class="iconify" data-icon="mdi:volume-high"></i>
+          </button>
+        </div>
+      </div>
+
+      <div class="product-container">
+        <div v-for="(item, idx) in filteredStockList" :key="idx" class="product-wrapper">
+          <div class="product" @click="addItem(item)">
+            <md-card md-with-hover>
+              <md-ripple>
+                <md-card-header v-if="!isElectron">
+                  <img :src="item.image" />
+                  <md-card-header-text>
+                    <div class="md-title">{{ item.name }}</div>
+                    <div class="md-subhead">{{ numberFormat(item.price) }}원</div>
+                  </md-card-header-text>
+                </md-card-header>
+                <div v-else>
+                  <md-card-media md-ratio="16:9">
+                    <img :src="item.image" />
+                  </md-card-media>
+                  <md-card-header>
+                    <div class="md-title">{{ item.name }}</div>
+                    <div class="md-subhead">{{ numberFormat(item.price) }}원</div>
+                  </md-card-header>
+                </div>
+              </md-ripple>
+            </md-card>
+          </div>
+          <button v-if="showVoiceAssist" class="voice-btn-small item-voice-btn" @click.stop="TTS(`${item.name} ${item.price}원`)">
+            <i class="iconify" data-icon="mdi:volume-high"></i>
+          </button>
+        </div>
       </div>
     </div>
 
@@ -115,17 +137,83 @@
 import { StockItem } from '@/schema';
 import numberFormat from '@/utils/numberFormat';
 import { Component, Vue } from 'vue-property-decorator';
-import { State } from 'vuex-class';
+import { Action, State } from 'vuex-class';
 
 @Component({})
 export default class Order extends Vue {
   @State('isElectron') isElectron!: boolean;
   @State('stockList') stockList!: StockItem[];
+  @State('showVoiceAssist') showVoiceAssist!: boolean;
+
+  @Action('TTS') TTS!: Function;
+
+  categories: string[] = ['전체', '커피', '음료', '디저트'];
+  selectedCategory: string = '전체';
 
   shoppingCartVisible: boolean = false;
   shoppingCart: StockItem[] = [];
 
   isCheckoutVisible: boolean = false;
+
+  getCategory(item: StockItem): string {
+    const name = item.name.toLowerCase();
+    
+    // 커피 키워드
+    if (
+      name.includes('커피') || 
+      name.includes('에스프레소') || 
+      name.includes('아메리카노') || 
+      name.includes('라떼') || 
+      name.includes('콜드브루') || 
+      name.includes('모카') || 
+      name.includes('카푸치노') || 
+      name.includes('마끼아또')
+    ) {
+      if (
+        name.includes('말차라떼') || 
+        name.includes('초코') || 
+        name.includes('딸기라떼') || 
+        name.includes('티라떼') || 
+        name.includes('밀크티') ||
+        name.includes('곡물라떼') ||
+        name.includes('토피넛라떼')
+      ) {
+        return '음료';
+      }
+      return '커피';
+    }
+    
+    // 디저트 키워드
+    if (
+      name.includes('케이크') || 
+      name.includes('쿠키') || 
+      name.includes('브레드') || 
+      name.includes('마카롱') || 
+      name.includes('머핀') || 
+      name.includes('와플') || 
+      name.includes('빵') || 
+      name.includes('베이글') || 
+      name.includes('샌드위치') || 
+      name.includes('허니') ||
+      name.includes('아이스크림') ||
+      name.includes('팥빙수') ||
+      name.includes('빙수') ||
+      name.includes('허니브레드') ||
+      name.includes('번') ||
+      name.includes('크로플')
+    ) {
+      return '디저트';
+    }
+    
+    return '음료';
+  }
+
+  get filteredStockList(): StockItem[] {
+    if (this.selectedCategory === '전체') {
+      return this.stockList;
+    }
+    return this.stockList.filter(item => this.getCategory(item) === this.selectedCategory);
+  }
 
   numberFormat(number: number) {
     return numberFormat(number);
@@ -186,29 +274,118 @@ export default class Order extends Vue {
 
   height: 100%;
 
+  .menu-section {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    overflow: hidden;
+  }
+
+  .category-tabs {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    background-color: #ffffff;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+    padding: 10px 20px;
+    gap: 15px;
+
+    .category-tab-wrapper {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex: 1;
+      max-width: 200px;
+      justify-content: center;
+
+      .category-tab {
+        flex: 1;
+        width: 100%;
+        height: 50px;
+        font-size: 1.25em;
+        font-weight: bold;
+        border: 1px solid #cccccc;
+        background-color: #ffffff;
+        color: #333333;
+        border-radius: 25px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+
+        &:hover {
+          background-color: #f0f0f0;
+        }
+
+        &.active {
+          background-color: #1c1b29;
+          color: #ffffff;
+          border-color: #1c1b29;
+        }
+      }
+    }
+  }
+
+  .voice-btn-small {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background-color: #ff9800;
+    color: white;
+    font-size: 1.25em;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    border: none;
+    outline: none;
+    transition: background-color 0.2s, transform 0.1s;
+    z-index: 100;
+
+    &:hover {
+      background-color: #f57c00;
+    }
+
+    &:active {
+      transform: scale(0.95);
+    }
+  }
+
   .product-container {
     display: flex;
     flex-direction: column;
     align-items: center;
 
     overflow-y: scroll;
+    flex: 1;
 
-    .product {
+    .product-wrapper {
+      display: flex;
+      align-items: center;
       width: 100%;
-      .md-ripple {
-        height: 90px;
-        img {
-          width: 60px;
-          height: 60px;
+      padding: 0 15px;
+
+      .product {
+        flex: 1;
+        .md-ripple {
+          height: 90px;
+          img {
+            width: 60px;
+            height: 60px;
+          }
+          .md-title {
+            margin: 0;
+          }
+          .md-card-header-text {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+          }
         }
-        .md-title {
-          margin: 0;
-        }
-        .md-card-header-text {
-          display: flex;
-          flex-direction: column;
-          justify-content: center;
-        }
+      }
+
+      .item-voice-btn {
+        margin-left: 10px;
       }
     }
   }
@@ -302,6 +479,58 @@ export default class Order extends Vue {
   display: flex;
   height: 100%;
 
+  .menu-section {
+    display: flex;
+    flex-direction: column;
+    width: 70%;
+    height: 100%;
+    box-shadow: 1px 0 40px rgba(#000, 0.1);
+
+    .category-tabs {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      width: 100%;
+      background-color: #ffffff;
+      border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+      padding: 15px 40px;
+      gap: 20px;
+
+      .category-tab-wrapper {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex: 1;
+        max-width: 250px;
+        justify-content: center;
+
+        .category-tab {
+          flex: 1;
+          width: 100%;
+          height: 60px;
+          font-size: 1.5em;
+          font-weight: bold;
+          border: 1px solid #cccccc;
+          background-color: #ffffff;
+          color: #333333;
+          border-radius: 30px;
+          cursor: pointer;
+          transition: all 0.2s ease;
+
+          &:hover {
+            background-color: #f0f0f0;
+          }
+
+          &.active {
+            background-color: #1c1b29;
+            color: #ffffff;
+            border-color: #1c1b29;
+          }
+        }
+      }
+    }
+  }
+
   .product-container {
     display: grid;
     grid-template-columns: 1fr 1fr 1fr;
@@ -309,16 +538,25 @@ export default class Order extends Vue {
     row-gap: 30px;
     column-gap: 30px;
 
-    width: 70%;
+    width: 100%;
 
     padding: 40px;
 
-    box-shadow: 1px 0 40px rgba(#000, 0.1);
-
     overflow-y: scroll;
+    flex: 1;
 
-    .product:last-child {
-      margin-bottom: 30px;
+    .product-wrapper {
+      display: flex;
+      align-items: center;
+      width: 100%;
+
+      .product {
+        flex: 1;
+      }
+
+      .item-voice-btn {
+        margin-left: 10px;
+      }
     }
   }
 

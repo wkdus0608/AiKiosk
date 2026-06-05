@@ -394,10 +394,26 @@ html {
     }
 
     // Voice assist button overrides
-    .voice-btn {
+    .voice-btn, .voice-btn-small {
       background-color: #000000 !important;
       color: #ffff00 !important;
       border: 3px solid #ffff00 !important;
+    }
+
+    // Category tabs overrides
+    .category-tabs {
+      background-color: #000000 !important;
+      border-bottom: 2px solid #ffff00 !important;
+      .category-tab {
+        background-color: #000000 !important;
+        color: #ffffff !important;
+        border: 2px solid #ffffff !important;
+        &.active {
+          background-color: #ffff00 !important;
+          color: #000000 !important;
+          border-color: #ffff00 !important;
+        }
+      }
     }
   }
 }
