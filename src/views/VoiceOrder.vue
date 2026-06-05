@@ -5,10 +5,16 @@
         <i class="iconify" data-icon="mdi:list-box-outline"></i>
         주문 가능한 메뉴
       </div>
-      <div class="menu-list">
+      <div class="menu-list" ref="menuList">
         <div v-for="(items, category) in categorizedStock" :key="category" class="category-group">
           <div class="category-name">{{ category }}</div>
-          <div v-for="item in items" :key="item.name" class="menu-list-item">
+          <div 
+            v-for="item in items" 
+            :key="item.name" 
+            class="menu-list-item"
+            :class="{ focused: focusedItemName === item.name }"
+            @click="addItemManually(item)"
+          >
             <img :src="item.image" :alt="item.name" />
             <div class="menu-info">
               <span class="menu-name">{{ item.name }}</span>
@@ -43,26 +49,43 @@
           <span> <i class="iconify" data-icon="mdi:microphone-off"></i></span>
         </span>
       </div>
+    </div>
 
-      <div class="shoppingCart-container">
-        <transition name="fade">
-          <md-card class="shoppingCart" v-if="shoppingCart.length">
-            <div class="shoppingCart-heading">
-              <h1>장바구니</h1>
-            </div>
+    <div class="shoppingCart-container">
+      <transition name="fade">
+        <md-card class="shoppingCart" v-if="shoppingCart.length">
+          <div class="shoppingCart-heading">
+            <h1>장바구니</h1>
+          </div>
 
+          <div class="shoppingCart-list">
             <div v-for="(item, idx) in shoppingCart" :key="idx" class="shoppingCart-item">
               <img :src="item.image" alt="" />
-              <h2>{{ item.name }}</h2>
-              <h3>&times;{{ item.quantity }}</h3>
-
+              <div class="cart-item-info">
+                <h2>{{ item.name }}</h2>
+                <div class="cart-item-controls">
+                  <app-button circle dense @click="decreaseItem(item)">-</app-button>
+                  <h3>&times;{{ item.quantity }}</h3>
+                  <app-button circle dense @click="increaseItem(item)">+</app-button>
+                </div>
+              </div>
               <h3 class="price">{{ numberFormat(item.price * item.quantity) }}원</h3>
             </div>
+          </div>
 
+          <div class="cart-footer">
             <h2 class="total">합계 | {{ getTotalPrice }}원</h2>
-          </md-card>
-        </transition>
-      </div>
+            <app-button 
+              class="checkout-btn" 
+              round 
+              color="primary" 
+              @click="checkout"
+            >
+              결제하기
+            </app-button>
+          </div>
+        </md-card>
+      </transition>
     </div>
 
     <transition name="fade">
@@ -117,6 +140,18 @@ export default class VoiceOrder extends Vue {
   isCheckoutVisible: boolean = false;
 
   shoppingCart: StockItem[] = []; // 현 주문 상품
+
+  focusedItemName: string = '';
+  focusedIndex: number = -1;
+
+  get flatCategorizedStock(): StockItem[] {
+    const flat: StockItem[] = [];
+    const groups = this.categorizedStock;
+    Object.keys(groups).forEach(cat => {
+      flat.push(...groups[cat]);
+    });
+    return flat;
+  }
 
   get categorizedStock(): { [key: string]: StockItem[] } {
     const groups: { [key: string]: StockItem[] } = {
@@ -190,7 +225,7 @@ export default class VoiceOrder extends Vue {
   }
 
   async mounted() {
-    window.addEventListener('keydown', this.activatePTT);
+    window.addEventListener('keydown', this.handleKeyDown);
     window.addEventListener('keyup', this.deactivatePTT);
 
     this.$store.state.script = script.earphone_connected;
@@ -198,23 +233,79 @@ export default class VoiceOrder extends Vue {
     await this.playItems();
     this.isOrderProcess = true;
     this.orderProcess();
+  }
 
-    // setTimeout(() => {
-    // 	this.shoppingCart.push(
-    // 		{
-    // 			name: "망고",
-    // 			price: 4000,
-    // 			quantity: 2,
-    // 			image: "https://firebasestorage.googleapis.com/v0/b/interactive-kiosk.appspot.com/o/products%2Fmango.jpg?alt=media&token=657b4a4a-0be6-4a45-8104-8659daf86edc",
-    // 		},
-    // 		{
-    // 			name: "자몽",
-    // 			price: 3000,
-    // 			quantity: 5,
-    // 			image: "https://firebasestorage.googleapis.com/v0/b/interactive-kiosk.appspot.com/o/products%2Fgrapefruit.jpg?alt=media&token=8f451da3-be70-4100-b94b-7f8514197087",
-    // 		}
-    // 	);
-    // }, 500);
+  beforeDestroy() {
+    window.removeEventListener('keydown', this.handleKeyDown);
+    window.removeEventListener('keyup', this.deactivatePTT);
+  }
+
+  handleKeyDown(event: KeyboardEvent) {
+    if (event.code === 'Space') {
+      this.activatePTT(event);
+      return;
+    }
+
+    if (this.isCheckoutVisible) return;
+
+    const menuItems = this.flatCategorizedStock;
+    if (menuItems.length === 0) return;
+
+    switch (event.key) {
+      case 'ArrowDown':
+        this.focusedIndex = Math.min(this.focusedIndex + 1, menuItems.length - 1);
+        this.updateFocus();
+        break;
+      case 'ArrowUp':
+        this.focusedIndex = Math.max(this.focusedIndex - 1, 0);
+        this.updateFocus();
+        break;
+      case 'Enter':
+        if (this.focusedIndex !== -1) {
+          this.addItemManually(menuItems[this.focusedIndex]);
+        }
+        break;
+    }
+  }
+
+  updateFocus() {
+    const menuItems = this.flatCategorizedStock;
+    if (this.focusedIndex !== -1 && menuItems[this.focusedIndex]) {
+      this.focusedItemName = menuItems[this.focusedIndex].name;
+      this.$nextTick(() => {
+        const container = this.$refs.menuList as HTMLElement;
+        if (container) {
+          const focusedElement = container.querySelector('.focused') as HTMLElement;
+          if (focusedElement) {
+            focusedElement.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+          }
+        }
+      });
+    }
+  }
+
+  addItemManually(item: StockItem) {
+    let prevItem = this.shoppingCart.find(s => s.name == item.name);
+    if (prevItem) {
+      if (this.stockList.find(i => i.name == item.name)!.quantity > prevItem.quantity)
+        prevItem.quantity++;
+    } else this.shoppingCart.push({ ...item, quantity: 1 });
+  }
+
+  increaseItem(item: StockItem) {
+    let prevItem = this.shoppingCart.find(i => i.name == item.name);
+    if (this.stockList.find(i => i.name == item.name)!.quantity > prevItem!.quantity)
+      prevItem!.quantity++;
+  }
+
+  decreaseItem(item: StockItem) {
+    let prevItem = this.shoppingCart.find(i => i.name == item.name);
+    if (prevItem!.quantity-- <= 1) this.removeItem(item);
+  }
+
+  removeItem(item: StockItem) {
+    let prevItemIdx = this.shoppingCart.findIndex(i => i.name == item.name);
+    if (prevItemIdx != -1) this.shoppingCart.splice(prevItemIdx, 1);
   }
 
   numberFormat(number: number) {
@@ -397,8 +488,8 @@ export default class VoiceOrder extends Vue {
 
 .voiceorder {
   display: flex;
-  flex-direction: row; // Changed from column to row
-  justify-content: space-between;
+  flex-direction: row;
+  justify-content: stretch;
   align-items: stretch;
 
   width: 100%;
@@ -407,8 +498,8 @@ export default class VoiceOrder extends Vue {
   overflow: hidden;
 
   .menu-list-container {
-    width: 30%;
-    min-width: 300px;
+    width: 25%;
+    min-width: 250px;
     height: 100%;
     background-color: #f5f5f5;
     border-right: 1px solid rgba(0, 0, 0, 0.1);
@@ -437,7 +528,7 @@ export default class VoiceOrder extends Vue {
       overflow-y: auto;
       display: flex;
       flex-direction: column;
-      gap: 25px; // Increased gap between categories
+      gap: 25px;
 
       .category-group {
         display: flex;
@@ -461,6 +552,14 @@ export default class VoiceOrder extends Vue {
         padding: 10px;
         border-radius: 12px;
         box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        cursor: pointer;
+        transition: all 0.2s ease;
+
+        &.focused {
+          box-shadow: 0 0 0 4px #ff9800, 0 4px 12px rgba(255, 152, 0, 0.4);
+          transform: scale(1.02);
+          z-index: 10;
+        }
 
         img {
           width: 50px;
@@ -497,22 +596,19 @@ export default class VoiceOrder extends Vue {
     align-items: center;
     position: relative;
     background-color: white;
+    padding: 0 20px;
 
     .dialog {
       position: absolute;
-      top: 60px; // Adjusted from 120px
-
+      top: 40px;
       padding: 20px;
-
       border-radius: 20px;
-
       background-color: white;
       box-shadow: 0 3px 5px rgba(#000, 0.4);
-
       font-weight: 500;
-      font-size: 1.4em;
-
-      max-width: 80%;
+      font-size: 1.3em;
+      max-width: 90%;
+      z-index: 10;
 
       .speech,
       .userText {
@@ -538,15 +634,12 @@ export default class VoiceOrder extends Vue {
       display: flex;
       justify-content: center;
       align-items: center;
-
-      width: 200px;
-      height: 200px;
-
+      width: 180px;
+      height: 180px;
       border-radius: 50%;
       background-color: rgba(#000, 0.3);
       box-shadow: 0 2px 10px rgba(#000, 0.4);
-
-      font-size: 80px;
+      font-size: 70px;
       color: white;
 
       &.speakable {
@@ -558,74 +651,103 @@ export default class VoiceOrder extends Vue {
         background-color: #47cf73;
       }
     }
+  }
 
-    .shoppingCart-container {
-      position: absolute; // Changed from fixed
-      bottom: 20px;
-      left: 0;
-      right: 0;
+  .shoppingCart-container {
+    width: 25%;
+    min-width: 280px;
+    height: 100%;
+    background-color: #f9f9f9;
+    border-left: 1px solid rgba(0, 0, 0, 0.1);
+    display: flex;
+    flex-direction: column;
+    padding: 20px;
+    box-sizing: border-box;
 
-      margin: 0 auto;
-
+    .shoppingCart {
+      flex: 1;
       display: flex;
-      justify-content: center;
-      align-items: center;
+      flex-direction: column;
+      background-color: transparent;
+      box-shadow: none;
+      padding: 0;
+      margin: 0;
 
-      width: 80%;
+      .shoppingCart-heading {
+        margin-bottom: 20px;
+        h1 {
+          font-size: 1.8em;
+          margin: 0;
+        }
+      }
 
-      z-index: 10000;
+      .shoppingCart-list {
+        flex: 1;
+        overflow-y: auto;
+        padding-right: 5px;
+      }
 
-      .shoppingCart {
+      .shoppingCart-item {
         display: flex;
-        flex-direction: column;
-        align-items: center;
+        align-items: flex-start;
+        padding: 15px 0;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.1);
 
-        border-radius: 20px;
-
-        width: 100%;
-        max-width: 500px;
-
-        padding: 20px;
-
-        box-shadow: 0 3px 15px rgba(0, 0, 0, 0.1);
-
-        .shoppingCart-heading {
-          display: flex;
-          align-items: center;
-
-          width: 100%;
-          margin-bottom: 10px;
+        img {
+          width: 50px;
+          height: 50px;
+          border-radius: 8px;
+          object-fit: cover;
+          margin-right: 12px;
         }
 
-        .shoppingCart-item {
+        .cart-item-info {
+          flex: 1;
           display: flex;
-          justify-content: space-between;
-          align-items: center;
-
-          width: 100%;
-
-          padding: 10px 0;
-          border-bottom: 0.5px solid rgba(#000, 0.15);
+          flex-direction: column;
+          gap: 8px;
 
           h2 {
-            flex: 1;
-            padding: 0 4px;
-            font-size: 1.2em;
+            font-size: 1.1em;
+            margin: 0;
+            padding: 0;
           }
-          img {
-            width: 50px;
-            height: 50px;
-            border-radius: 50%;
-            object-fit: cover;
+
+          .cart-item-controls {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+
+            h3 {
+              font-size: 1.1em;
+              margin: 0;
+            }
           }
         }
+
         .price {
-          flex: 1;
-          text-align: right;
+          font-size: 1.1em;
+          font-weight: bold;
+          white-space: nowrap;
         }
+      }
+
+      .cart-footer {
+        padding-top: 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+
         .total {
-          margin-top: 20px;
-          align-self: flex-end;
+          font-size: 1.5em;
+          font-weight: bold;
+          text-align: right;
+          margin: 0;
+        }
+
+        .checkout-btn {
+          height: 60px;
+          font-size: 1.4em;
           font-weight: bold;
         }
       }
