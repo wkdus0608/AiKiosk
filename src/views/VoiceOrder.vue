@@ -1,47 +1,65 @@
 <template>
   <div class="voiceorder">
-    <div class="dialog">
-      <div class="speech">
-        <app-button circle color="default">
-          <i class="iconify" data-icon="mdi:volume-high"></i>
-        </app-button>
-        {{ script }}
+    <div class="menu-list-container">
+      <div class="menu-list-header">
+        <i class="iconify" data-icon="mdi:list-box-outline"></i>
+        주문 가능한 메뉴
       </div>
-      <div v-if="userText" class="userText">
-        <app-button circle color="default">
-          <i class="iconify" data-icon="mdi:microphone"></i>
-        </app-button>
-        {{ userText }}
+      <div class="menu-list">
+        <div v-for="item in stockList" :key="item.name" class="menu-list-item">
+          <img :src="item.image" :alt="item.name" />
+          <div class="menu-info">
+            <span class="menu-name">{{ item.name }}</span>
+            <span class="menu-price">{{ numberFormat(item.price) }}원</span>
+          </div>
+        </div>
       </div>
     </div>
 
-    <div class="indicator" :class="{ speakable: isSpeakable, recording: isRecording }">
-      <span v-if="isSpeakable || isRecording">
-        <span> <i class="iconify" data-icon="mdi:microphone"></i></span>
-      </span>
-      <span v-else>
-        <span> <i class="iconify" data-icon="mdi:microphone-off"></i></span>
-      </span>
-    </div>
+    <div class="order-main">
+      <div class="dialog">
+        <div class="speech">
+          <app-button circle color="default">
+            <i class="iconify" data-icon="mdi:volume-high"></i>
+          </app-button>
+          {{ script }}
+        </div>
+        <div v-if="userText" class="userText">
+          <app-button circle color="default">
+            <i class="iconify" data-icon="mdi:microphone"></i>
+          </app-button>
+          {{ userText }}
+        </div>
+      </div>
 
-    <div class="shoppingCart-container">
-      <transition name="fade">
-        <md-card class="shoppingCart" v-if="shoppingCart.length">
-          <div class="shoppingCart-heading">
-            <h1>장바구니</h1>
-          </div>
+      <div class="indicator" :class="{ speakable: isSpeakable, recording: isRecording }">
+        <span v-if="isSpeakable || isRecording">
+          <span> <i class="iconify" data-icon="mdi:microphone"></i></span>
+        </span>
+        <span v-else>
+          <span> <i class="iconify" data-icon="mdi:microphone-off"></i></span>
+        </span>
+      </div>
 
-          <div v-for="(item, idx) in shoppingCart" :key="idx" class="shoppingCart-item">
-            <img :src="item.image" alt="" />
-            <h2>{{ item.name }}</h2>
-            <h3>&times;{{ item.quantity }}</h3>
+      <div class="shoppingCart-container">
+        <transition name="fade">
+          <md-card class="shoppingCart" v-if="shoppingCart.length">
+            <div class="shoppingCart-heading">
+              <h1>장바구니</h1>
+            </div>
 
-            <h3 class="price">{{ numberFormat(item.price * item.quantity) }}원</h3>
-          </div>
+            <div v-for="(item, idx) in shoppingCart" :key="idx" class="shoppingCart-item">
+              <img :src="item.image" alt="" />
+              <h2>{{ item.name }}</h2>
+              <h3>&times;{{ item.quantity }}</h3>
 
-          <h2 class="total">합계 | {{ getTotalPrice }}원</h2>
-        </md-card>
-      </transition>
+              <h3 class="price">{{ numberFormat(item.price * item.quantity) }}원</h3>
+            </div>
+
+            <h2 class="total">합계 | {{ getTotalPrice }}원</h2>
+          </md-card>
+        </transition>
+      </div>
     </div>
 
     <transition name="fade">
@@ -305,140 +323,222 @@ export default class VoiceOrder extends Vue {
 
 .voiceorder {
   display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
+  flex-direction: row; // Changed from column to row
+  justify-content: space-between;
+  align-items: stretch;
 
   width: 100%;
   height: 100%;
 
   overflow: hidden;
 
-  .dialog {
-    position: absolute;
-    top: 120px;
-
+  .menu-list-container {
+    width: 30%;
+    min-width: 300px;
+    height: 100%;
+    background-color: #f5f5f5;
+    border-right: 1px solid rgba(0, 0, 0, 0.1);
+    display: flex;
+    flex-direction: column;
     padding: 20px;
+    box-sizing: border-box;
 
-    border-radius: 20px;
-
-    background-color: white;
-    box-shadow: 0 3px 5px rgba(#000, 0.4);
-
-    font-weight: 500;
-    font-size: 1.4em;
-
-    .speech,
-    .userText {
+    .menu-list-header {
+      font-size: 1.5em;
+      font-weight: bold;
+      margin-bottom: 20px;
       display: flex;
       align-items: center;
-    }
+      gap: 10px;
+      color: #333;
 
-    .userText {
-      padding-top: 15px;
-      margin-top: 15px;
-      border-top: 1px solid rgba(#000, 0.3);
-    }
-
-    .app-button {
-      margin-right: 15px;
       .iconify {
-        font-size: 2em;
+        font-size: 1.2em;
+        color: $primary-color;
       }
     }
-  }
 
-  .indicator {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-
-    width: 200px;
-    height: 200px;
-
-    border-radius: 50%;
-    background-color: rgba(#000, 0.3);
-    box-shadow: 0 2px 10px rgba(#000, 0.4);
-
-    font-size: 80px;
-    color: white;
-
-    &.speakable {
-      animation: indicator 1.5s infinite;
-      background-color: $primary-color;
-    }
-
-    &.recording {
-      background-color: #47cf73;
-    }
-  }
-
-  .shoppingCart-container {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-
-    margin: 0 auto;
-    margin-bottom: 10px;
-
-    display: flex;
-    justify-content: center;
-    align-items: center;
-
-    width: 60%;
-
-    z-index: 10000;
-
-    .shoppingCart {
+    .menu-list {
+      flex: 1;
+      overflow-y: auto;
       display: flex;
       flex-direction: column;
-      align-items: center;
+      gap: 15px;
 
-      border-radius: 20px;
-
-      width: 100%;
-      max-width: 500px;
-
-      padding: 20px;
-
-      box-shadow: 0 3px 5px -1px rgba(#000, 0.5);
-
-      .shoppingCart-heading {
+      .menu-list-item {
         display: flex;
         align-items: center;
+        background-color: white;
+        padding: 10px;
+        border-radius: 12px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 
-        width: 100%;
-        margin-bottom: 10px;
-      }
-
-      .shoppingCart-item {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-
-        width: 100%;
-
-        padding: 10px 0;
-        border-bottom: 0.5px solid rgba(#000, 0.15);
-
-        h2 {
-          flex: 1;
-          padding: 0 4px;
-        }
         img {
           width: 50px;
           height: 50px;
-          border-radius: 50%;
+          border-radius: 8px;
+          object-fit: cover;
+          margin-right: 12px;
+        }
+
+        .menu-info {
+          display: flex;
+          flex-direction: column;
+
+          .menu-name {
+            font-size: 1.1em;
+            font-weight: 600;
+            color: #333;
+          }
+
+          .menu-price {
+            font-size: 0.9em;
+            color: #666;
+          }
         }
       }
-      .price {
-        flex: 1;
-        text-align: right;
+    }
+  }
+
+  .order-main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+    background-color: white;
+
+    .dialog {
+      position: absolute;
+      top: 60px; // Adjusted from 120px
+
+      padding: 20px;
+
+      border-radius: 20px;
+
+      background-color: white;
+      box-shadow: 0 3px 5px rgba(#000, 0.4);
+
+      font-weight: 500;
+      font-size: 1.4em;
+
+      max-width: 80%;
+
+      .speech,
+      .userText {
+        display: flex;
+        align-items: center;
       }
-      .total {
-        margin-top: 20px;
-        align-self: flex-end;
+
+      .userText {
+        padding-top: 15px;
+        margin-top: 15px;
+        border-top: 1px solid rgba(#000, 0.3);
+      }
+
+      .app-button {
+        margin-right: 15px;
+        .iconify {
+          font-size: 2em;
+        }
+      }
+    }
+
+    .indicator {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+
+      width: 200px;
+      height: 200px;
+
+      border-radius: 50%;
+      background-color: rgba(#000, 0.3);
+      box-shadow: 0 2px 10px rgba(#000, 0.4);
+
+      font-size: 80px;
+      color: white;
+
+      &.speakable {
+        animation: indicator 1.5s infinite;
+        background-color: $primary-color;
+      }
+
+      &.recording {
+        background-color: #47cf73;
+      }
+    }
+
+    .shoppingCart-container {
+      position: absolute; // Changed from fixed
+      bottom: 20px;
+      left: 0;
+      right: 0;
+
+      margin: 0 auto;
+
+      display: flex;
+      justify-content: center;
+      align-items: center;
+
+      width: 80%;
+
+      z-index: 10000;
+
+      .shoppingCart {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+
+        border-radius: 20px;
+
+        width: 100%;
+        max-width: 500px;
+
+        padding: 20px;
+
+        box-shadow: 0 3px 15px rgba(0, 0, 0, 0.1);
+
+        .shoppingCart-heading {
+          display: flex;
+          align-items: center;
+
+          width: 100%;
+          margin-bottom: 10px;
+        }
+
+        .shoppingCart-item {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+
+          width: 100%;
+
+          padding: 10px 0;
+          border-bottom: 0.5px solid rgba(#000, 0.15);
+
+          h2 {
+            flex: 1;
+            padding: 0 4px;
+            font-size: 1.2em;
+          }
+          img {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            object-fit: cover;
+          }
+        }
+        .price {
+          flex: 1;
+          text-align: right;
+        }
+        .total {
+          margin-top: 20px;
+          align-self: flex-end;
+          font-weight: bold;
+        }
       }
     }
   }
