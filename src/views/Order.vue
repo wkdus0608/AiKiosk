@@ -19,7 +19,7 @@
         </div>
       </div>
 
-      <div class="product-container" ref="productContainer">
+      <div class="product-container" :class="{ 'grid-mode': isElectron }" ref="productContainer">
         <div 
           v-for="(item, idx) in filteredStockList" 
           :key="idx" 
@@ -465,10 +465,17 @@ export default class Order extends Vue {
   transform: translateY(100px);
 }
 
-.order {
-  display: flex;
-  flex-direction: column;
+// Shared Focus Styles
+.focused {
+  box-shadow: 0 0 0 6px #ff9800, 0 0 30px rgba(255, 152, 0, 0.8) !important;
+  transform: scale(1.05) !important;
+  z-index: 1000 !important;
+  position: relative !important;
+  outline: none !important;
+}
 
+.order, .order-electron {
+  display: flex;
   height: 100%;
 
   .menu-section {
@@ -476,6 +483,11 @@ export default class Order extends Vue {
     flex-direction: column;
     flex: 1;
     overflow: hidden;
+    
+    &.order-electron-section {
+      width: 70%;
+      box-shadow: 1px 0 40px rgba(#000, 0.1);
+    }
   }
 
   .category-tabs {
@@ -485,7 +497,7 @@ export default class Order extends Vue {
     width: 100%;
     background-color: #ffffff;
     border-bottom: 1px solid rgba(0, 0, 0, 0.1);
-    padding: 10px 20px;
+    padding: 15px 20px;
     gap: 15px;
 
     .category-tab-wrapper {
@@ -493,7 +505,7 @@ export default class Order extends Vue {
       align-items: center;
       gap: 8px;
       flex: 1;
-      max-width: 200px;
+      max-width: 250px;
       justify-content: center;
 
       .category-tab {
@@ -507,7 +519,7 @@ export default class Order extends Vue {
         color: #333333;
         border-radius: 25px;
         cursor: pointer;
-        transition: all 0.2s ease;
+        transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 
         &:hover {
           background-color: #f0f0f0;
@@ -518,18 +530,14 @@ export default class Order extends Vue {
           color: #ffffff;
           border-color: #1c1b29;
         }
-
+        
         &.focused {
-          background-color: #f0f0f0;
-          color: #333333;
-          outline: 4px solid #ff9800;
-          outline-offset: -4px;
-          z-index: 10;
-        }
-
-        &.active.focused {
-          background-color: #2c2b39;
-          color: #ffffff;
+          background-color: #ffffff !important;
+          color: #1c1b29 !important;
+          &.active {
+            background-color: #1c1b29 !important;
+            color: #ffffff !important;
+          }
         }
       }
     }
@@ -565,41 +573,90 @@ export default class Order extends Vue {
     display: flex;
     flex-direction: column;
     align-items: center;
-
+    padding: 20px;
     overflow-y: scroll;
     flex: 1;
+
+    &.grid-mode {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      row-gap: 30px;
+      column-gap: 30px;
+      padding: 40px;
+    }
 
     .product-wrapper {
       display: flex;
       align-items: center;
       width: 100%;
-      padding: 0 15px;
-      transition: all 0.2s ease;
-      border-radius: 10px;
+      padding: 10px 15px;
+      transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      border-radius: 15px;
 
       &.focused {
-        background-color: rgba(255, 152, 0, 0.1);
-        transform: scale(1.02);
-        outline: 4px solid #ff9800;
-        outline-offset: -4px;
-        z-index: 10;
+        background-color: white !important;
       }
 
       .product {
         flex: 1;
+        
+        .md-card {
+          margin: 0;
+          width: 100%;
+        }
+
         .md-ripple {
-          height: 90px;
+          padding: 10px;
+          
           img {
-            width: 60px;
-            height: 60px;
+            object-fit: cover;
+            border-radius: 4px;
           }
+
           .md-title {
+            font-size: 1.2em;
+            font-weight: bold;
             margin: 0;
           }
-          .md-card-header-text {
+
+          .md-subhead {
+            font-size: 1em;
+            opacity: 0.7;
+          }
+        }
+
+        // Electron Grid specific card styles
+        .grid-mode & {
+          .md-card-header {
+            padding: 16px;
+          }
+          .md-card-media {
+            img {
+              width: 100%;
+              height: 100%;
+              object-fit: cover;
+            }
+          }
+        }
+        
+        // Mobile List specific card styles
+        &:not(.grid-mode) & {
+          .md-ripple {
             display: flex;
-            flex-direction: column;
-            justify-content: center;
+            height: 90px;
+            align-items: center;
+            
+            img {
+              width: 70px;
+              height: 70px;
+              margin-right: 16px;
+            }
+            
+            .md-card-header-text {
+              display: flex;
+              flex-direction: column;
+              justify-content: center;
+            }
           }
         }
       }
@@ -609,234 +666,122 @@ export default class Order extends Vue {
       }
     }
   }
+
+  .shoppingCart-container {
+    z-index: 10000;
+  }
+}
+
+.order {
+  flex-direction: column;
+  
   .shoppingCart-container {
     position: fixed;
     bottom: 0;
     left: 0;
     right: 0;
-
     margin: 0 auto;
     margin-bottom: 15px;
-
     display: flex;
     justify-content: center;
     align-items: center;
-
     width: 60%;
     min-width: 400px;
-
-    z-index: 10000;
-
-    .shoppingCart-toggle {
-      padding: 10px;
-    }
-    .shoppingCart {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-
-      border-radius: 20px;
-
-      width: 100%;
-      max-width: 500px;
-
-      padding: 20px;
-
-      box-shadow: 0 3px 5px -1px rgba(#000, 0.5);
-
-      .shoppingCart-heading {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-
-        width: 100%;
-        margin-bottom: 10px;
-      }
-
-      .shoppingCart-item {
-        display: flex;
-        align-items: center;
-
-        width: 100%;
-
-        padding: 10px 0;
-        border-bottom: 0.5px solid rgba(#000, 0.15);
-
-        h2 {
-          padding: 0 4px;
-        }
-        img {
-          width: 50px;
-          height: 50px;
-          border-radius: 50%;
-        }
-      }
-
-      h2 {
-        flex: 2;
-      }
-      .shoppingCart-actions {
-        flex: 1;
-        .md-icon-button {
-        }
-        h3 {
-          padding: 0 10px;
-        }
-      }
-      .price {
-        flex: 2;
-        text-align: right;
-      }
-      .checkout {
-        margin-top: 20px;
-        align-self: flex-end;
-      }
-    }
   }
 }
 
 .order-electron {
-  display: flex;
-  height: 100%;
-
-  .menu-section {
-    display: flex;
-    flex-direction: column;
-    width: 70%;
-    height: 100%;
-    box-shadow: 1px 0 40px rgba(#000, 0.1);
-
-    .category-tabs {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      width: 100%;
-      background-color: #ffffff;
-      border-bottom: 1px solid rgba(0, 0, 0, 0.1);
-      padding: 15px 40px;
-      gap: 20px;
-
-      .category-tab-wrapper {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        flex: 1;
-        max-width: 250px;
-        justify-content: center;
-
-        .category-tab {
-          flex: 1;
-          width: 100%;
-          height: 60px;
-          font-size: 1.5em;
-          font-weight: bold;
-          border: 1px solid #cccccc;
-          background-color: #ffffff;
-          color: #333333;
-          border-radius: 30px;
-          cursor: pointer;
-          transition: all 0.2s ease;
-
-          &:hover {
-            background-color: #f0f0f0;
-          }
-
-          &.active {
-            background-color: #1c1b29;
-            color: #ffffff;
-            border-color: #1c1b29;
-          }
-        }
-      }
-    }
-  }
-
-  .product-container {
-    display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
-
-    row-gap: 30px;
-    column-gap: 30px;
-
-    width: 100%;
-
-    padding: 40px;
-
-    overflow-y: scroll;
-    flex: 1;
-
-    .product-wrapper {
-      display: flex;
-      align-items: center;
-      width: 100%;
-
-      .product {
-        flex: 1;
-      }
-
-      .item-voice-btn {
-        margin-left: 10px;
-      }
-    }
-  }
-
   .shoppingCart-container {
     display: flex;
     flex-direction: column;
-
     position: relative;
-
     width: 30%;
     height: 100%;
-
     padding: 30px;
+  }
+}
 
-    .shoppingCart {
-      box-shadow: none;
-      background-color: transparent;
-      margin-top: 20px;
+.shoppingCart {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  border-radius: 20px;
+  width: 100%;
+  padding: 20px;
+  box-shadow: 0 3px 15px rgba(0, 0, 0, 0.2);
+  background-color: white;
 
-      height: 100%;
+  .order-electron & {
+    box-shadow: none;
+    background-color: transparent;
+    margin-top: 20px;
+    height: 100%;
+  }
 
-      .shoppingCart-heading {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
+  .shoppingCart-heading {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    margin-bottom: 10px;
+    
+    .order-electron & {
+      margin-bottom: 40px;
+      h1 { font-size: 2.5em; }
+    }
+  }
 
-        margin-bottom: 40px;
-        h1 {
-          font-size: 2.5em;
-        }
-      }
+  .shoppingCart-item {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    padding: 10px 0;
+    border-bottom: 0.5px solid rgba(#000, 0.15);
 
-      .shoppingCart-item {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
+    .order-electron & {
+      justify-content: space-between;
+      padding: 20px 0;
+    }
 
-        padding: 20px 0;
-        border-bottom: 0.5px solid rgba(#000, 0.15);
+    img {
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      object-fit: cover;
+    }
 
-        img {
-          width: 50px;
-          height: 50px;
+    h2 {
+      flex: 2;
+      padding: 0 10px;
+      font-size: 1.1em;
+    }
 
-          border-radius: 50%;
-        }
+    .shoppingCart-actions {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      
+      h3 { padding: 0 10px; }
+    }
 
-        h3 {
-          padding: 0 10px;
-        }
-      }
+    .price {
+      flex: 1;
+      text-align: right;
+      font-weight: bold;
+    }
+  }
 
-      .checkout {
-        position: absolute;
-        top: auto;
-        bottom: 10px;
-
-        width: 100%;
-        height: 50px;
-      }
+  .checkout {
+    margin-top: 20px;
+    align-self: flex-end;
+    
+    .order-electron & {
+      position: absolute;
+      bottom: 10px;
+      width: calc(100% - 60px);
+      height: 60px;
+      font-size: 1.2em;
     }
   }
 }
@@ -847,72 +792,60 @@ export default class Order extends Vue {
   bottom: 0;
   left: 0;
   right: 0;
-
   display: flex;
   justify-content: center;
   align-items: flex-end;
-
   background-color: rgba(#000, 0.5);
-
   width: 100%;
   height: 100%;
-
-  z-index: 10001;
+  z-index: 20000;
 
   .checkout {
     display: flex;
     flex-direction: column;
     align-items: center;
-
     border-radius: 20px;
-
     margin-bottom: 15px;
-
     width: 100%;
     max-width: 500px;
-
     padding: 20px;
-
     box-shadow: 0 3px 5px -1px rgba(#000, 0.5);
+    background-color: white;
 
     .checkout-heading {
       display: flex;
       justify-content: space-between;
       align-items: center;
-
       width: 100%;
       margin-bottom: 10px;
     }
 
     img {
       display: block;
-
-      width: calc(50% - 32px);
+      width: 60%;
       max-height: 370px;
+      margin: 20px 0;
     }
 
     .total {
       margin-top: 20px;
+      font-size: 1.4em;
+      text-align: center;
     }
   }
 }
 
 .app-button.focused {
-  outline: 4px solid #ff9800 !important;
-  outline-offset: -4px;
-  box-shadow: 0 0 10px rgba(255, 152, 0, 0.5) !important;
+  z-index: 10001 !important;
 }
 
 @media screen and (max-width: 600px) {
   .shoppingCart-container {
-    .shoppingCart-actions {
-      .md-icon-button {
-        // display: none;
-      }
-    }
-    .price {
-      flex: 3 !important;
-    }
+    width: 90% !important;
+    min-width: unset !important;
   }
+}
+</style>
+}
 }
 </style>
