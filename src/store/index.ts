@@ -48,7 +48,7 @@ const store: StoreOptions<RootState> = {
         price: 5000,
         quantity: 100,
         alias: ['라떼'],
-        image: 'https://images.unsplash.com/photo-1541167760496-162955ed8a9f?w=500&q=80'
+        image: 'https://images.unsplash.com/photo-1570968915860-54d5c301fa9f?w=500&q=80'
       },
       {
         name: '카푸치노',
@@ -62,7 +62,7 @@ const store: StoreOptions<RootState> = {
         price: 5500,
         quantity: 100,
         alias: ['바닐라', '단커피'],
-        image: 'https://images.unsplash.com/photo-1595434066389-99c30150fc9a?w=500&q=80'
+        image: 'https://images.unsplash.com/photo-1461023058943-07fcaf183535?w=500&q=80'
       },
       {
         name: '조각 케이크',
@@ -90,7 +90,77 @@ const store: StoreOptions<RootState> = {
         price: 5500,
         quantity: 30,
         alias: ['와플'],
-        image: 'https://images.unsplash.com/photo-1551326344-42d39d7a04f5?w=500&q=80'
+        image: 'https://images.unsplash.com/photo-1598214886806-c87b84b7078b?w=500&q=80'
+      },
+      {
+        name: '망고',
+        price: 4500,
+        quantity: 30,
+        alias: ['망고', '망구'],
+        image: 'https://images.unsplash.com/photo-1553177595-4de2bb0842b9?w=500&q=80'
+      },
+      {
+        name: '수박',
+        price: 5000,
+        quantity: 20,
+        alias: ['수박', '스박'],
+        image: 'https://images.unsplash.com/photo-1563229871-841846ffb71a?w=500&q=80'
+      },
+      {
+        name: '바나나',
+        price: 1500,
+        quantity: 50,
+        alias: ['바나나'],
+        image: 'https://images.unsplash.com/photo-1528825831135-3391d4c1ce3f?w=500&q=80'
+      },
+      {
+        name: '레몬',
+        price: 1000,
+        quantity: 50,
+        alias: ['레몬'],
+        image: 'https://images.unsplash.com/photo-1513558161293-cdaf765ed2fd?w=500&q=80'
+      },
+      {
+        name: '자몽',
+        price: 3000,
+        quantity: 40,
+        alias: ['자몽', '자뭉'],
+        image: 'https://images.unsplash.com/photo-1551024709-8f23befc6f87?w=500&q=80'
+      },
+      {
+        name: '오렌지',
+        price: 1000,
+        quantity: 50,
+        alias: ['오렌지'],
+        image: 'https://images.unsplash.com/photo-1621506289937-a8e4df240d0b?w=500&q=80'
+      },
+      {
+        name: '사과',
+        price: 1500,
+        quantity: 60,
+        alias: ['사과', '사가'],
+        image: 'https://images.unsplash.com/photo-1567306226416-28f0efdc88ce?w=500&q=80'
+      },
+      {
+        name: '토마토',
+        price: 5000,
+        quantity: 30,
+        alias: ['토마토'],
+        image: 'https://images.unsplash.com/photo-1592924357228-91a4daadcfea?w=500&q=80'
+      },
+      {
+        name: '복숭아',
+        price: 3000,
+        quantity: 30,
+        alias: ['복숭아'],
+        image: 'https://images.unsplash.com/photo-1522841799216-590ba63d748d?w=500&q=80'
+      },
+      {
+        name: '체리',
+        price: 500,
+        quantity: 100,
+        alias: ['체리'],
+        image: 'https://images.unsplash.com/photo-1528821128474-27f963b062bf?w=500&q=80'
       }
     ],
     helloLoop: 0,
@@ -120,7 +190,13 @@ const store: StoreOptions<RootState> = {
   },
   getters: {
     allStockList(state): StockItem[] {
-      return [...state.stockList, ...state.mockStockList];
+      const merged = [...state.mockStockList];
+      state.stockList.forEach(item => {
+        if (!merged.find(m => m.name === item.name)) {
+          merged.push(item);
+        }
+      });
+      return merged;
     }
   },
   actions: {
