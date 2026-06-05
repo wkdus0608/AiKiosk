@@ -2,7 +2,10 @@
   <div id="app" :style="{ '--font-scale': fontSize }" :class="{ 'high-contrast': highContrast }">
     <header>
       <div class="pwa">
-        <app-button v-if="deferredPrompt" circle color="default" @click="showPWA">
+        <app-button v-if="$route.path !== '/'" circle color="default" @click="$router.back()">
+          <i class="iconify" data-icon="mdi:arrow-left"></i>
+        </app-button>
+        <app-button v-else-if="deferredPrompt" circle color="default" @click="showPWA">
           <i class="iconify" data-icon="mdi:download"></i>
         </app-button>
       </div>
@@ -44,9 +47,9 @@
     </div>
 
     <div class="path-list">
-      <router-link to="/" class="path">
-        <i class="iconify path" data-icon="mdi-home" @click="$router.replace('/')"></i>
-      </router-link>
+      <div class="path" @click="$router.replace('/')">
+        <i class="iconify" data-icon="mdi:home"></i>
+      </div>
       <span class="path">{{ $route.name }}</span>
     </div>
     <div class="content">
@@ -97,6 +100,10 @@ export default class App extends Vue {
 
   get isMac() {
     return process.platform === 'darwin';
+  }
+
+  goBack() {
+    this.$router.back();
   }
 }
 </script>

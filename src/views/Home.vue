@@ -2,7 +2,7 @@
   <div class="home">
     <div class="actions">
       <div class="action-item">
-        <app-button @click="$router.replace('/voiceorder')">
+        <app-button @click="$router.push('/voiceorder')">
           <i class="iconify" data-icon="mdi:microphone"></i>
           <span>말로 주문하기</span>
         </app-button>
@@ -20,7 +20,7 @@
         </button>
       </div>
       <div class="action-item">
-        <app-button @click="$router.replace('order')">
+        <app-button @click="$router.push('/order')">
           <i class="iconify" data-icon="mdi:touch-app"></i>
           <span>터치로 주문하기</span>
         </app-button>
