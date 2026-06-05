@@ -6,11 +6,14 @@
         주문 가능한 메뉴
       </div>
       <div class="menu-list">
-        <div v-for="item in stockList" :key="item.name" class="menu-list-item">
-          <img :src="item.image" :alt="item.name" />
-          <div class="menu-info">
-            <span class="menu-name">{{ item.name }}</span>
-            <span class="menu-price">{{ numberFormat(item.price) }}원</span>
+        <div v-for="(items, category) in categorizedStock" :key="category" class="category-group">
+          <div class="category-name">{{ category }}</div>
+          <div v-for="item in items" :key="item.name" class="menu-list-item">
+            <img :src="item.image" :alt="item.name" />
+            <div class="menu-info">
+              <span class="menu-name">{{ item.name }}</span>
+              <span class="menu-price">{{ numberFormat(item.price) }}원</span>
+            </div>
           </div>
         </div>
       </div>
@@ -114,6 +117,77 @@ export default class VoiceOrder extends Vue {
   isCheckoutVisible: boolean = false;
 
   shoppingCart: StockItem[] = []; // 현 주문 상품
+
+  get categorizedStock(): { [key: string]: StockItem[] } {
+    const groups: { [key: string]: StockItem[] } = {
+      '커피': [],
+      '음료': [],
+      '디저트': []
+    };
+
+    this.stockList.forEach(item => {
+      const category = this.getCategory(item);
+      if (groups[category]) {
+        groups[category].push(item);
+      } else {
+        groups['음료'].push(item); // Default
+      }
+    });
+
+    // Remove empty categories
+    return Object.fromEntries(Object.entries(groups).filter(([_, items]) => items.length > 0));
+  }
+
+  getCategory(item: StockItem): string {
+    const name = item.name.toLowerCase();
+    
+    if (
+      name.includes('커피') || 
+      name.includes('에스프레소') || 
+      name.includes('아메리카노') || 
+      name.includes('라떼') || 
+      name.includes('콜드브루') || 
+      name.includes('모카') || 
+      name.includes('카푸치노') || 
+      name.includes('마끼아또')
+    ) {
+      if (
+        name.includes('말차라떼') || 
+        name.includes('초코') || 
+        name.includes('딸기라떼') || 
+        name.includes('티라떼') || 
+        name.includes('밀크티') ||
+        name.includes('곡물라떼') ||
+        name.includes('토피넛라떼')
+      ) {
+        return '음료';
+      }
+      return '커피';
+    }
+    
+    if (
+      name.includes('케이크') || 
+      name.includes('쿠키') || 
+      name.includes('브레드') || 
+      name.includes('마카롱') || 
+      name.includes('머핀') || 
+      name.includes('와플') || 
+      name.includes('빵') || 
+      name.includes('베이글') || 
+      name.includes('샌드위치') || 
+      name.includes('허니') ||
+      name.includes('아이스크림') ||
+      name.includes('팥빙수') ||
+      name.includes('빙수') ||
+      name.includes('허니브레드') ||
+      name.includes('번') ||
+      name.includes('크로플')
+    ) {
+      return '디저트';
+    }
+    
+    return '음료';
+  }
 
   async mounted() {
     window.addEventListener('keydown', this.activatePTT);
@@ -363,7 +437,22 @@ export default class VoiceOrder extends Vue {
       overflow-y: auto;
       display: flex;
       flex-direction: column;
-      gap: 15px;
+      gap: 25px; // Increased gap between categories
+
+      .category-group {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+
+        .category-name {
+          font-size: 1.2em;
+          font-weight: bold;
+          color: $primary-color;
+          padding-bottom: 5px;
+          border-bottom: 2px solid rgba($primary-color, 0.2);
+          margin-bottom: 5px;
+        }
+      }
 
       .menu-list-item {
         display: flex;
